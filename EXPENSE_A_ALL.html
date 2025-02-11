@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monthly Expense Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f8f9fa;
+        }
+        .container {
+            max-width: 450px;
+            margin: auto;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        h2, h3 {
+            color: #333;
+        }
+        input, button {
+            margin: 8px 0;
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        input[type="number"] {
+            width: 120px;
+            text-align: center;
+        }
+        .expense-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #f1f1f1;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 8px 0;
+        }
+        .delete-btn, .save-btn {
+            cursor: pointer;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+            font-size: 14px;
+            color: white;
+        }
+        .delete-btn {
+            background-color: red;
+        }
+        .save-btn {
+            background-color: green;
+        }
+        .expense-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .daily-spending {
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+        .add-expense-btn {
+            background-color: blue;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Monthly Expense Tracker</h2>
+
+        <div class="expense-controls">
+            <label><b>Fixed Income (₹):</b></label>
+            <input type="number" id="fixedIncome" value="66000">
+            <button class="save-btn" onclick="saveIncome()">💾 Save</button>
+        </div>
+
+        <h3>Expenses</h3>
+        <div id="expenses"></div>
+        <button class="add-expense-btn" onclick="addExpense()">➕ Add Expense</button>
+
+        <h3>Daily Spending Calculator</h3>
+        <div class="daily-spending">
+            <label>Money Left (₹):</label>
+            <input type="number" id="moneyLeft" value="0" oninput="calculateDailySpending()">
+            <br>
+            <label>Days Left in Month:</label>
+            <input type="number" id="daysLeft" value="30" oninput="calculateDailySpending()">
+            <p><b>You can spend per day: ₹<span id="dailySpending">0</span></b></p>
+        </div>
+    </div>
+
+    <script>
+        let expenses = JSON.parse(localStorage.getItem('expenses')) || [
+            { name: "Savings", isPaid: false, amount: 0 },
+            { name: "Maid", isPaid: false, amount: 0 },
+            { name: "Credit Card", isPaid: false, amount: 0 },
+            { name: "Rent", isPaid: false, amount: 0 }
+        ];
+
+        function renderExpenses() {
+            let expensesDiv = document.getElementById("expenses");
+            expensesDiv.innerHTML = "";
+            expenses.forEach((expense, index) => {
+                expensesDiv.innerHTML += `
+                    <div class="expense-item">
+                        <input type="checkbox" id="paid-${index}" ${expense.isPaid ? "checked" : ""} onchange="togglePaid(${index})">
+                        <span>${expense.name}</span>
+                        ₹<input type="number" id="amount-${index}" value="${expense.amount}" oninput="updateAmount(${index}, this.value)">
+                        <button class="delete-btn" onclick="deleteExpense(${index})">🗑</button>
+                    </div>
+                `;
+            });
+            calculateDailySpending();
+        }
+
+        function togglePaid(index) {
+            expenses[index].isPaid = document.getElementById(`paid-${index}`).checked;
+            saveExpenses();
+        }
+
+        function updateAmount(index, value) {
+            expenses[index].amount = parseFloat(value) || 0;
+            saveExpenses();
+        }
+
+        function addExpense() {
+            let name = prompt("Enter new expense name:");
+            if (name) {
+                expenses.push({ name, isPaid: false, amount: 0 });
+                saveAndUpdate();
+            }
+        }
+
+        function deleteExpense(index) {
+            if (confirm("Are you sure you want to delete this expense?")) {
+                expenses.splice(index, 1); 
+                saveAndUpdate();
+            }
+        }
+
+        function calculateDailySpending() {
+            let moneyLeft = parseFloat(document.getElementById("moneyLeft").value) || 0;
+            let daysLeft = parseInt(document.getElementById("daysLeft").value) || 1;
+            let dailySpending = moneyLeft / daysLeft;
+            document.getElementById("dailySpending").textContent = dailySpending.toFixed(2);
+            saveState();
+        }
+
+        function saveIncome() {
+            let income = parseFloat(document.getElementById("fixedIncome").value) || 0;
+            localStorage.setItem("fixedIncome", income);
+        }
+
+        function loadIncome() {
+            let savedIncome = localStorage.getItem("fixedIncome");
+            if (savedIncome) {
+                document.getElementById("fixedIncome").value = savedIncome;
+            }
+        }
+
+        function saveExpenses() {
+            localStorage.setItem("expenses", JSON.stringify(expenses));
+        }
+
+        function saveState() {
+            localStorage.setItem("moneyLeft", document.getElementById("moneyLeft").value);
+            localStorage.setItem("daysLeft", document.getElementById("daysLeft").value);
+        }
+
+        function loadState() {
+            document.getElementById("moneyLeft").value = localStorage.getItem("moneyLeft") || 0;
+            document.getElementById("daysLeft").value = localStorage.getItem("daysLeft") || 30;
+        }
+
+        function saveAndUpdate() {
+            saveExpenses();
+            renderExpenses();
+        }
+
+        loadIncome();
+        loadState();
+        renderExpenses();
+    </script>
+
+</body>
+</html>
